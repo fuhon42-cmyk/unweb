@@ -15,7 +15,7 @@ export default function Home() {
           your site effortlessly. No config. No overhead. Just results.
         </p>
         <a
-          href="/register"
+          href="/unweb/register"
           className="mt-10 inline-flex h-12 items-center gap-2 rounded-full bg-emerald-500 px-8 text-base font-semibold text-black transition-colors hover:bg-emerald-400"
         >
           Get Started
