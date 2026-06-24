@@ -149,3 +149,26 @@ def cache_set(url: str, title: str, content: str, structured_data: Optional[dict
     if structured_data is not None:
         record["structured_data"] = structured_data
     sup.table("search_cache").upsert(record, on_conflict="url").execute()
+
+
+# ---------------------------------------------------------------------------
+# Metrics / event tracking
+#
+# Requires the following table in Supabase:
+#
+#   create table metrics (
+#     id uuid primary key default gen_random_uuid(),
+#     event text not null,
+#     detail jsonb default '{}',
+#     created_at timestamptz default now()
+#   );
+# ---------------------------------------------------------------------------
+
+def track_event(event: str, detail: dict) -> None:
+    sup = _get()
+    record = {
+        "event": event,
+        "detail": detail,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    sup.table("metrics").insert(record).execute()

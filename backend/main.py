@@ -32,6 +32,7 @@ from .schemas import (
     SearchResponse,
     SiteInfo,
 )
+from .metrics import get_dashboard_stats, get_timeline
 from .supabase import (
     authenticate_user,
     cache_get,
@@ -43,6 +44,7 @@ from .supabase import (
     get_site_by_name,
     list_user_keys,
     list_user_sites,
+    track_event,
 )
 
 logger = logging.getLogger(__name__)
@@ -94,14 +96,39 @@ app.add_middleware(SlowAPIMiddleware)
 
 
 # ---------------------------------------------------------------------------
-# Request logging middleware
+# Request logging + metrics middleware
 # ---------------------------------------------------------------------------
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
+async def track_requests(request: Request, call_next):
     start = time()
+
+    user_id = None
+    api_key = request.headers.get("x-api-key")
+    if api_key:
+        if environ.get("UNWEB_DEV", "").lower() == "true":
+            user_id = environ.get("DEV_USER_ID", "062b5af1-9058-44dd-b2e2-6d60b90cda15")
+        else:
+            try:
+                from .auth import verify_api_key as _vk
+                user_id = _vk(request, api_key)
+            except Exception:
+                pass
+
     response = await call_next(request)
     duration = time() - start
     logger.info("%s %s %.3fs", request.method, request.url.path, duration)
+
+    try:
+        track_event("api_call", {
+            "route": request.url.path,
+            "method": request.method,
+            "user_id": user_id,
+            "status_code": response.status_code,
+            "duration_s": round(duration, 3),
+        })
+    except Exception:
+        pass
+
     return response
 
 
@@ -142,6 +169,18 @@ async def health():
     return {"status": "ok", "version": "0.1.0"}
 
 
+@app.get(
+    "/api/v1/metrics",
+    tags=["metrics"],
+    responses={401: {"model": ErrorResponse}},
+)
+async def metrics(user_id: str = Depends(verify_api_key)):
+    return {
+        "dashboard": get_dashboard_stats(),
+        "timeline": get_timeline(24),
+    }
+
+
 @app.post(
     "/api/v1/extract",
     response_model=ExtractResponse,
@@ -154,8 +193,10 @@ async def health():
 )
 @local_dev_limiter.limit()
 async def extract(request: Request, body: ExtractRequest, user_id: str = Depends(verify_api_key)):
+    track_event("extract", {"url": body.url, "user_id": user_id})
     cached = cache_get(body.url)
     if cached is not None:
+        track_event("cache_hit", {"url": body.url})
         return ExtractResponse(
             title=cached["title"],
             description="",
@@ -164,6 +205,7 @@ async def extract(request: Request, body: ExtractRequest, user_id: str = Depends
             actions=[],
             metadata={"url": body.url, "word_count": 0},
         )
+    track_event("cache_miss", {"url": body.url})
     result = await fetch_url(body.url)
     if result["status_code"] == -1:
         return JSONResponse(
@@ -198,6 +240,7 @@ async def extract(request: Request, body: ExtractRequest, user_id: str = Depends
     tags=["publish"],
 )
 async def publish(body: PublishRequest, user_id: str = Depends(verify_api_key)):
+    track_event("publish", {"site_name": body.site_name, "url": body.url, "user_id": user_id})
     site_name = body.site_name
     existing = get_site_by_name(site_name)
     if existing:
@@ -281,6 +324,7 @@ async def get_llms_site(request: Request, site_name: str):
 )
 @local_dev_limiter.limit("10/minute")
 async def search(request: Request, body: SearchRequest, user_id: str = Depends(verify_api_key)):
+    track_event("search", {"query": body.query, "max_results": body.max_results, "user_id": user_id})
     results = await search_web(body.query, body.max_results)
     urls = [r["url"] for r in results if r["url"]]
     extracts = await batch_extract(urls, use_llm=True)
