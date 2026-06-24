@@ -107,6 +107,20 @@ def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+@app.get("/", tags=["root"])
+async def root():
+    return {
+        "name": "Unweb API",
+        "version": "0.1.0",
+        "docs": "/docs",
+        "endpoints": {
+            "GET /api/v1/health": "Health check",
+            "POST /api/v1/extract": "Extract structured content from any URL",
+            "POST /api/v1/publish": "Register a site for AI-readable access",
+            "GET /api/v1/sites/{id}": "Get published site info"
+        }
+    }
+
 @app.get("/api/v1/health", tags=["health"])
 async def health():
     return {"status": "ok", "version": "0.1.0"}
