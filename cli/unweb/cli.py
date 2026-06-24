@@ -155,6 +155,37 @@ def _error(resp: httpx.Response):
     console.print(f"[red]Error {resp.status_code}:[/] {detail}")
 
 
+@click.command("search")
+@click.argument("query")
+@click.option("--max-results", "-n", default=3, help="Number of results")
+@click.pass_context
+def search_cmd(ctx, query: str, max_results: int):
+    """Search the web and get a summarized report."""
+    with _client(ctx) as client:
+        console.print(f"[dim]Searching: {query}...[/]")
+        try:
+            resp = client.post("/api/v1/search", json={"query": query, "max_results": max_results})
+        except httpx.ConnectError:
+            console.print("[red]API server is not reachable.[/]")
+            raise click.Abort()
+    if resp.is_error:
+        _error(resp)
+        raise click.Abort()
+
+    data = resp.json()
+    console.print(Panel(data["summary"], title=f"[bold]🔍 {query}[/]", border_style="green"))
+    if data["key_points"]:
+        console.print("\n[bold]Key Points:[/]")
+        for pt in data["key_points"]:
+            console.print(f"  • {pt}")
+    if data["sources"]:
+        console.print("\n[bold]Sources:[/]")
+        for s in data["sources"]:
+            console.print(f"  [{s.get('relevance','?')}] {s['title']}")
+
+cli.add_command(search_cmd)
+
+
 main = cli
 
 if __name__ == "__main__":

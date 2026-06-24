@@ -17,6 +17,7 @@ from .crawler import fetch_url
 from .extractor import extract_content
 from .llm_extractor import extract_with_llm, merge_extraction
 from .rate_limit import FreeTierLimiter, local_dev_limiter
+from .search import batch_extract, search_web, summarize_results
 from .schemas import (
     AuthRequest,
     AuthResponse,
@@ -27,6 +28,8 @@ from .schemas import (
     KeysResponse,
     PublishRequest,
     PublishResponse,
+    SearchRequest,
+    SearchResponse,
     SiteInfo,
 )
 from .supabase import (
@@ -249,6 +252,33 @@ async def get_llms_site(request: Request, site_name: str):
             },
         )
     return site
+
+
+# ---------------------------------------------------------------------------
+# Auth endpoints
+# ---------------------------------------------------------------------------
+@app.post(
+    "/api/v1/search",
+    response_model=SearchResponse,
+    tags=["search"],
+    responses={
+        401: {"model": ErrorResponse},
+        429: {"model": ErrorResponse},
+    },
+)
+@local_dev_limiter.limit("10/minute")
+async def search(request: Request, body: SearchRequest, user_id: str = Depends(verify_api_key)):
+    results = await search_web(body.query, body.max_results)
+    urls = [r["url"] for r in results if r["url"]]
+    extracts = await batch_extract(urls, use_llm=True)
+    summary = await summarize_results(body.query, extracts)
+    return SearchResponse(
+        query=body.query,
+        summary=summary.get("summary", ""),
+        key_points=summary.get("key_points", []),
+        sources=summary.get("sources", []),
+        raw_results=results,
+    )
 
 
 # ---------------------------------------------------------------------------

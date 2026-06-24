@@ -12,6 +12,37 @@ class ExtractRequest(BaseModel):
     }
 
 
+class SearchRequest(BaseModel):
+    query: str
+    max_results: int = 5
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{"query": "AI agent infrastructure tools", "max_results": 3}]
+        }
+    }
+
+
+class SearchResponse(BaseModel):
+    query: str
+    summary: str
+    key_points: list[str]
+    sources: list[dict]
+    raw_results: list[dict]
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{
+                "query": "example",
+                "summary": "Synthesized report...",
+                "key_points": ["Point 1", "Point 2"],
+                "sources": [{"title": "Source", "url": "https://...", "relevance": "high"}],
+                "raw_results": []
+            }]
+        }
+    }
+
+
 class ExtractResponse(BaseModel):
     title: str
     description: str
