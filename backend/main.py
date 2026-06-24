@@ -1,12 +1,10 @@
 """Unweb API – FastAPI application."""
 
 import logging
-import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from os import environ
 from time import time
-from typing import Any
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,13 +27,20 @@ from .schemas import (
     KeysResponse,
     PublishRequest,
     PublishResponse,
+    SiteInfo,
 )
-from .supabase import authenticate_user, create_api_key, create_user, list_user_keys
+from .supabase import (
+    authenticate_user,
+    create_api_key,
+    create_site,
+    create_user,
+    get_site_by_id,
+    get_site_by_name,
+    list_user_keys,
+    list_user_sites,
+)
 
 logger = logging.getLogger(__name__)
-
-_sites: dict[str, dict[str, Any]] = {}
-
 
 # ---------------------------------------------------------------------------
 # Lifespan
@@ -45,7 +50,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.limiter = local_dev_limiter._limiter
     logger.info("startup complete")
     yield
-    _sites.clear()
     logger.info("shutdown complete")
 
 
@@ -178,16 +182,25 @@ async def extract(request: Request, body: ExtractRequest, user_id: str = Depends
     tags=["publish"],
 )
 async def publish(body: PublishRequest, user_id: str = Depends(verify_api_key)):
-    site_id = f"site_{uuid.uuid4().hex}"
-    base_url = environ.get("LLMS_BASE_URL", "https://llms.example.com")
-    llms_url = f"{base_url}/p/{site_id}"
-    _sites[site_id] = {
-        "site_id": site_id,
-        "llms_url": llms_url,
-        "url": body.url,
-        "content": body.content,
-        "site_name": body.site_name,
-    }
+    site_name = body.site_name
+    existing = get_site_by_name(site_name)
+    if existing:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "error": "conflict",
+                "detail": f"Site name '{site_name}' already exists",
+            },
+        )
+    site_id = create_site(
+        user_id=user_id,
+        site_name=site_name,
+        url=body.url,
+        content=body.content,
+        description=body.content[:200],
+    )
+    base_url = environ.get("LLMS_BASE_URL", "")
+    llms_url = f"{base_url}/llms/{site_name}"
     return PublishResponse(llms_url=llms_url, site_id=site_id)
 
 
@@ -197,13 +210,42 @@ async def publish(body: PublishRequest, user_id: str = Depends(verify_api_key)):
     responses={404: {"model": ErrorResponse}},
 )
 async def get_site(site_id: str, user_id: str = Depends(verify_api_key)):
-    site = _sites.get(site_id)
+    site = get_site_by_id(site_id)
     if site is None:
         return JSONResponse(
             status_code=404,
             content={
                 "error": "not_found",
                 "detail": f"Site with id '{site_id}' not found",
+            },
+        )
+    return site
+
+
+@app.get(
+    "/api/v1/sites",
+    tags=["sites"],
+    responses={404: {"model": ErrorResponse}},
+)
+async def list_sites(user_id: str = Depends(verify_api_key)):
+    sites = list_user_sites(user_id)
+    return sites
+
+
+@app.get(
+    "/llms/{site_name}",
+    response_model=SiteInfo,
+    tags=["sites"],
+)
+@local_dev_limiter.limit("30/minute")
+async def get_llms_site(request: Request, site_name: str):
+    site = get_site_by_name(site_name)
+    if site is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error": "not_found",
+                "detail": f"Site '{site_name}' not found",
             },
         )
     return site

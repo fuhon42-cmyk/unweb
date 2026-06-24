@@ -36,6 +36,30 @@ class ExtractResponse(BaseModel):
     }
 
 
+class SiteInfo(BaseModel):
+    id: str
+    site_name: str
+    url: str
+    content: str
+    description: str
+    created_at: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": "abc123",
+                    "site_name": "my-blog",
+                    "url": "https://example.com/article",
+                    "content": "Full article content here...",
+                    "description": "An example article",
+                    "created_at": "2024-01-01T00:00:00Z",
+                }
+            ]
+        }
+    }
+
+
 class PublishRequest(BaseModel):
     url: str
     content: str

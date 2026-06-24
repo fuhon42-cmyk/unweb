@@ -65,3 +65,39 @@ def list_user_keys(user_id: str) -> list[dict]:
     sup = _get()
     r = sup.table("api_keys").select("id", "key", "created_at").eq("user_id", user_id).execute()
     return r.data
+
+
+def create_site(user_id: str, site_name: str, url: str, content: str, description: str) -> str:
+    sup = _get()
+    r = sup.table("sites").insert({
+        "user_id": user_id,
+        "site_name": site_name,
+        "url": url,
+        "content": content,
+        "description": description,
+    }).execute()
+    return r.data[0]["id"]
+
+
+def get_site_by_name(site_name: str) -> Optional[dict]:
+    sup = _get()
+    r = sup.table("sites").select("*").eq("site_name", site_name).maybe_single().execute()
+    return r.data if r.data else None
+
+
+def get_site_by_id(site_id: str) -> Optional[dict]:
+    sup = _get()
+    r = sup.table("sites").select("*").eq("id", site_id).maybe_single().execute()
+    return r.data if r.data else None
+
+
+def list_user_sites(user_id: str) -> list[dict]:
+    sup = _get()
+    r = sup.table("sites").select("*").eq("user_id", user_id).execute()
+    return r.data
+
+
+def update_site(site_id: str, content: str) -> bool:
+    sup = _get()
+    r = sup.table("sites").update({"content": content}).eq("id", site_id).execute()
+    return bool(r.data)
