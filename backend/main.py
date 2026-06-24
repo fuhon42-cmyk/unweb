@@ -1,0 +1,182 @@
+"""Unweb API – FastAPI application."""
+
+import logging
+import uuid
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+from os import environ
+from time import time
+from typing import Any
+
+from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+from backend.auth import verify_api_key
+from backend.crawler import fetch_url
+from backend.extractor import extract_content
+from backend.rate_limit import FreeTierLimiter, local_dev_limiter
+from backend.schemas import (
+    ErrorResponse,
+    ExtractRequest,
+    ExtractResponse,
+    PublishRequest,
+    PublishResponse,
+)
+
+logger = logging.getLogger(__name__)
+
+_sites: dict[str, dict[str, Any]] = {}
+
+
+# ---------------------------------------------------------------------------
+# Lifespan
+# ---------------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    app.state.limiter = local_dev_limiter._limiter
+    logger.info("startup complete")
+    yield
+    _sites.clear()
+    logger.info("shutdown complete")
+
+
+# ---------------------------------------------------------------------------
+# App
+# ---------------------------------------------------------------------------
+app = FastAPI(
+    title="Unweb API",
+    version="0.1.0",
+    lifespan=lifespan,
+    openapi_tags=[
+        {"name": "health", "description": "Health check endpoint"},
+        {"name": "extract", "description": "Extract structured content from a URL"},
+        {"name": "publish", "description": "Publish content as a new site"},
+        {"name": "sites", "description": "Retrieve published site information"},
+    ],
+)
+
+
+# ---------------------------------------------------------------------------
+# CORS
+# ---------------------------------------------------------------------------
+origins = environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
+origin_regex = environ.get("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex=origin_regex,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(SlowAPIMiddleware)
+
+
+# ---------------------------------------------------------------------------
+# Request logging middleware
+# ---------------------------------------------------------------------------
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time()
+    response = await call_next(request)
+    duration = time() - start
+    logger.info("%s %s %.3fs", request.method, request.url.path, duration)
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Exception handlers
+# ---------------------------------------------------------------------------
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": "rate_limit_exceeded",
+            "detail": "Too many requests. Please try again later.",
+        },
+        headers={"Retry-After": "60"},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
+@app.get("/api/v1/health", tags=["health"])
+async def health():
+    return {"status": "ok", "version": "0.1.0"}
+
+
+@app.post(
+    "/api/v1/extract",
+    response_model=ExtractResponse,
+    responses={
+        401: {"model": ErrorResponse},
+        429: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
+    },
+    tags=["extract"],
+)
+@local_dev_limiter.limit()
+async def extract(request: Request, body: ExtractRequest, user_id: str = Depends(verify_api_key)):
+    result = await fetch_url(body.url)
+    if result["status_code"] == -1:
+        return JSONResponse(
+            status_code=403,
+            content={
+                "error": "robots_blocked",
+                "detail": f"Access to {body.url} is blocked by robots.txt",
+            },
+        )
+    if result["status_code"] == 0:
+        return JSONResponse(
+            status_code=502,
+            content={
+                "error": "fetch_failed",
+                "detail": f"Failed to fetch URL: {body.url}",
+            },
+        )
+    extracted = await extract_content(result["html"], result["final_url"])
+    return extracted
+
+
+@app.post(
+    "/api/v1/publish",
+    response_model=PublishResponse,
+    tags=["publish"],
+)
+async def publish(body: PublishRequest, user_id: str = Depends(verify_api_key)):
+    site_id = f"site_{uuid.uuid4().hex}"
+    base_url = environ.get("LLMS_BASE_URL", "https://llms.example.com")
+    llms_url = f"{base_url}/p/{site_id}"
+    _sites[site_id] = {
+        "site_id": site_id,
+        "llms_url": llms_url,
+        "url": body.url,
+        "content": body.content,
+        "site_name": body.site_name,
+    }
+    return PublishResponse(llms_url=llms_url, site_id=site_id)
+
+
+@app.get(
+    "/api/v1/sites/{site_id}",
+    tags=["sites"],
+    responses={404: {"model": ErrorResponse}},
+)
+async def get_site(site_id: str, user_id: str = Depends(verify_api_key)):
+    site = _sites.get(site_id)
+    if site is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error": "not_found",
+                "detail": f"Site with id '{site_id}' not found",
+            },
+        )
+    return site

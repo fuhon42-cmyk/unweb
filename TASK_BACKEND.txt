@@ -1,0 +1,18 @@
+Build the Unweb backend (Python FastAPI) in /Users/fahone/Desktop/unweb/backend/. Create ALL of these files with complete, production-quality code:
+
+1. backend/requirements.txt: fastapi, uvicorn, httpx, beautifulsoup4, pydantic, python-dotenv, supabase, slowapi
+
+2. backend/schemas.py: Pydantic models for ExtractRequest, ExtractResponse (title,description,content,structured_data,actions,metadata), PublishRequest, PublishResponse, ErrorResponse
+
+3. backend/crawler.py: async fetch_url() with httpx, User-Agent rotation, robots.txt check, error handling for all HTTP errors
+
+4. backend/extractor.py: BeautifulSoup HTML parser, extracts title/meta/content, strips scripts/styles/nav, finds OpenGraph/JSON-LD, detects actions. No LLM yet.
+
+5. backend/auth.py: API key middleware, validates against Supabase, 401 on invalid
+
+6. backend/rate_limit.py: slowapi rate limiter, 100 req/min, 429 response
+
+7. backend/main.py: FastAPI app with /api/v1/extract, /api/v1/publish, /api/v1/sites/{id}, /api/v1/health. CORS, OpenAPI docs, logging, env var config.
+
+All code: async/await, type hints, docstrings, error handling, no hardcoded credentials.
+After creating, verify with: python3 -m py_compile backend/*.py
