@@ -80,8 +80,8 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 # CORS
 # ---------------------------------------------------------------------------
-origins = environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
-origin_regex = environ.get("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
+origins = environ.get("CORS_ORIGINS", "http://localhost:3000,https://fuhon42-cmyk.github.io").split(",")
+origin_regex = environ.get("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app|https://.*\.github\.io")
 
 app.add_middleware(
     CORSMiddleware,
