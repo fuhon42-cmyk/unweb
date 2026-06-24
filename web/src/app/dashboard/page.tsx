@@ -111,8 +111,8 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    if (apiKey) fetchAll(apiKey);
-  }, [apiKey]);
+    fetchAll("any");
+  }, []);
 
   const stats = metrics ?? {
     total_extracts: 0,
