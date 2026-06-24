@@ -34,6 +34,8 @@ from .schemas import (
 )
 from .supabase import (
     authenticate_user,
+    cache_get,
+    cache_set,
     create_api_key,
     create_site,
     create_user,
@@ -152,6 +154,16 @@ async def health():
 )
 @local_dev_limiter.limit()
 async def extract(request: Request, body: ExtractRequest, user_id: str = Depends(verify_api_key)):
+    cached = cache_get(body.url)
+    if cached is not None:
+        return ExtractResponse(
+            title=cached["title"],
+            description="",
+            content=cached["content"],
+            structured_data=cached.get("structured_data", {}),
+            actions=[],
+            metadata={"url": body.url, "word_count": 0},
+        )
     result = await fetch_url(body.url)
     if result["status_code"] == -1:
         return JSONResponse(
@@ -176,6 +188,7 @@ async def extract(request: Request, body: ExtractRequest, user_id: str = Depends
             title=extracted.title, description=extracted.description
         )
         extracted = merge_extraction(extracted, llm_data)
+    cache_set(body.url, extracted.title, extracted.content, extracted.structured_data)
     return extracted
 
 

@@ -10,6 +10,7 @@ import httpx
 from .extractor import extract_content
 from .crawler import fetch_url
 from .llm_extractor import extract_with_llm, merge_extraction
+from .supabase import cache_get, cache_set
 
 SEARCH_URL = "https://html.duckduckgo.com/html/"
 
@@ -57,6 +58,13 @@ async def search_web(query: str, max_results: int = 5) -> list[dict]:
 async def batch_extract(urls: list[str], use_llm: bool = False) -> list[dict]:
     """Extract content from multiple URLs in parallel."""
     async def extract_one(url: str) -> Optional[dict]:
+        cached = cache_get(url)
+        if cached is not None:
+            return {
+                "title": cached["title"],
+                "url": url,
+                "content": cached["content"][:3000],
+            }
         try:
             result = await fetch_url(url)
             if result["status_code"] != 200:
@@ -65,6 +73,7 @@ async def batch_extract(urls: list[str], use_llm: bool = False) -> list[dict]:
             if use_llm:
                 llm_data = await extract_with_llm(extracted.content, url)
                 extracted = merge_extraction(extracted, llm_data)
+            cache_set(url, extracted.title, extracted.content, extracted.structured_data)
             return {
                 "title": extracted.title,
                 "url": url,

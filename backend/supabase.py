@@ -10,6 +10,7 @@ RLS note: if queries return None/hang, run these SQL statements in the Supabase 
 import hashlib
 import os
 import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from supabase import create_client
@@ -126,3 +127,25 @@ def update_site(site_id: str, content: str) -> bool:
     if r is None or not hasattr(r, 'data') or r.data is None:
         return False
     return bool(r.data)
+
+
+def cache_get(url: str) -> Optional[dict]:
+    sup = _get()
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    r = sup.table("search_cache").select("*").eq("url", url).gte("cached_at", cutoff).maybe_single().execute()
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        return None
+    return r.data
+
+
+def cache_set(url: str, title: str, content: str, structured_data: Optional[dict] = None) -> None:
+    sup = _get()
+    record = {
+        "url": url,
+        "title": title,
+        "content": content,
+        "cached_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if structured_data is not None:
+        record["structured_data"] = structured_data
+    sup.table("search_cache").upsert(record, on_conflict="url").execute()
