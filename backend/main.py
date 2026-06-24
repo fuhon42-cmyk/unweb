@@ -14,11 +14,11 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from backend.auth import verify_api_key
-from backend.crawler import fetch_url
-from backend.extractor import extract_content
-from backend.rate_limit import FreeTierLimiter, local_dev_limiter
-from backend.schemas import (
+from .auth import verify_api_key
+from .crawler import fetch_url
+from .extractor import extract_content
+from .rate_limit import FreeTierLimiter, local_dev_limiter
+from .schemas import (
     ErrorResponse,
     ExtractRequest,
     ExtractResponse,

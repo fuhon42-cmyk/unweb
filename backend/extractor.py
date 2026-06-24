@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, Tag
 
-from backend.schemas import ExtractResponse
+from .schemas import ExtractResponse
 
 
 def _clean_text(text: str) -> str:
