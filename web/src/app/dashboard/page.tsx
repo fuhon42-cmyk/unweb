@@ -4,21 +4,10 @@ import { useState, useEffect } from "react";
 import CopyButton from "@/components/CopyButton";
 import { extract, type ExtractResponse } from "@/lib/api";
 
-// ---------------------------------------------------------------------------
-// Mock data (no auth yet)
-// ---------------------------------------------------------------------------
+const API_BASE = "https://unweb-production-6f69.up.railway.app";
 
-const mockSites = [
-  { id: "site_1", name: "Documentation", url: "https://docs.example.com", status: "active" as const, lastScraped: "Jun 23, 2026" },
-  { id: "site_2", name: "Blog", url: "https://blog.example.com", status: "active" as const, lastScraped: "Jun 22, 2026" },
-  { id: "site_3", name: "API Reference", url: "https://api.example.com", status: "error" as const, lastScraped: "Jun 20, 2026" },
-  { id: "site_4", name: "Landing Page", url: "https://example.com", status: "pending" as const, lastScraped: "Jun 24, 2026" },
-];
-
-const mockApiKey = "sk-unweb-mock-key-abc123def456ghi789jkl";
-
-const BASE_URL: string =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+interface SiteItem { id: string; site_name: string; url: string; content?: string }
+interface DashboardMetrics { total_extracts: number; total_publishes: number; unique_urls_24h: number }
 
 interface DashboardMetrics {
   total_extracts: number;
@@ -107,28 +96,28 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [resultOpen, setResultOpen] = useState(false);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [sites, setSites] = useState<SiteItem[]>([]);
+  const [apiKey, setApiKey] = useState("");
+
+  async function fetchAll(key: string) {
+    try {
+      const [mr, sr] = await Promise.all([
+        fetch(`${API_BASE}/api/v1/metrics`, { headers: { "X-API-Key": key } }),
+        fetch(`${API_BASE}/api/v1/sites`, { headers: { "X-API-Key": key } }),
+      ]);
+      if (mr.ok) { const d = await mr.json(); setMetrics(d.dashboard); }
+      if (sr.ok) { const d = await sr.json(); setSites(Array.isArray(d) ? d : []); }
+    } catch {}
+  }
 
   useEffect(() => {
-    async function fetchMetrics() {
-      try {
-        const res = await fetch(`${BASE_URL}/api/v1/metrics`, {
-          headers: { "X-API-Key": mockApiKey },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setMetrics(data.dashboard);
-        }
-      } catch {
-        // API not available — stay null, mock fallback not needed
-      }
-    }
-    fetchMetrics();
-  }, []);
+    if (apiKey) fetchAll(apiKey);
+  }, [apiKey]);
 
   const stats = metrics ?? {
-    total_extracts: 847,
-    total_publishes: 4,
-    unique_urls_24h: 42,
+    total_extracts: 0,
+    total_publishes: 0,
+    unique_urls_24h: 0,
   };
 
   async function handleExtract(e: React.FormEvent) {
@@ -141,7 +130,7 @@ export default function DashboardPage() {
     setResultOpen(false);
 
     try {
-      const data = await extract(url, mockApiKey);
+      const data = await extract(url, apiKey);
       setResult(data);
       setResultOpen(true);
     } catch (err) {
@@ -186,9 +175,9 @@ export default function DashboardPage() {
           <h2 className="mb-4 text-lg font-semibold">API Key</h2>
           <div className="flex items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900/50 px-5 py-4">
             <code className="min-w-0 flex-1 truncate font-mono text-sm text-zinc-300">
-              {mockApiKey}
+              {apiKey}
             </code>
-            <CopyButton text={mockApiKey} label="Copy" />
+            <CopyButton text={apiKey} label="Copy" />
           </div>
         </section>
 
@@ -208,20 +197,20 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {mockSites.map((site) => (
+                {sites.map((site) => (
                   <tr
                     key={site.id}
                     className="border-b border-zinc-700 last:border-0"
                   >
-                    <td className="px-5 py-4 font-medium">{site.name}</td>
+                    <td className="px-5 py-4 font-medium">{site.site_name}</td>
                     <td className="max-w-0 px-5 py-4 font-mono text-xs text-zinc-300">
                       <span className="block truncate">{site.url}</span>
                     </td>
                     <td className="px-5 py-4">
-                      <StatusBadge status={site.status} />
+                      <StatusBadge status={"active"} />
                     </td>
                     <td className="px-5 py-4 text-zinc-300">
-                      {site.lastScraped}
+                      {site.url}
                     </td>
                   </tr>
                 ))}
