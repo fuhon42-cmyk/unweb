@@ -170,15 +170,11 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* API key */}
-        <section className="mb-10">
-          <h2 className="mb-4 text-lg font-semibold">API Key</h2>
-          <div className="flex items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900/50 px-5 py-4">
-            <code className="min-w-0 flex-1 truncate font-mono text-sm text-zinc-300">
-              {apiKey}
-            </code>
-            <CopyButton text={apiKey} label="Copy" />
-          </div>
+        {/* Quick start */}
+        <section className="mb-10 rounded-xl border border-zinc-700 bg-zinc-900/50 p-6">
+          <h2 className="text-lg font-semibold">Get Your API Key</h2>
+          <p className="mt-1 text-sm text-zinc-300">Register to get a personal key for higher rate limits.</p>
+          <a href="/unweb/register" className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-emerald-500 px-6 text-sm font-semibold text-black hover:bg-emerald-400">Register Free</a>
         </section>
 
         {/* Sites list */}
