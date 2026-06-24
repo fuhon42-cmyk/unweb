@@ -1,4 +1,11 @@
-"""Supabase client and auth database helpers for Unweb."""
+"""Supabase client and auth database helpers for Unweb.
+
+RLS note: if queries return None/hang, run these SQL statements in the Supabase dashboard SQL editor:
+
+  alter table users disable row level security;
+  alter table api_keys disable row level security;
+  alter table sites disable row level security;
+"""
 
 import hashlib
 import os
@@ -43,7 +50,9 @@ def create_user(email: str, password: str) -> str:
 def authenticate_user(email: str, password: str) -> Optional[str]:
     sup = _get()
     r = sup.table("users").select("id", "password_hash").eq("email", email).maybe_single().execute()
-    if r.data and r.data["password_hash"] == _hash(password):
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        return None
+    if r.data["password_hash"] == _hash(password):
         return r.data["id"]
     return None
 
@@ -51,19 +60,25 @@ def authenticate_user(email: str, password: str) -> Optional[str]:
 def create_api_key(user_id: str) -> str:
     sup = _get()
     key = _token()
-    sup.table("api_keys").insert({"user_id": user_id, "key": key}).execute()
+    r = sup.table("api_keys").insert({"user_id": user_id, "key": key}).execute()
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        raise RuntimeError("Failed to create API key")
     return key
 
 
 def verify_api_key(key: str) -> Optional[str]:
     sup = _get()
     r = sup.table("api_keys").select("user_id").eq("key", key).maybe_single().execute()
-    return r.data["user_id"] if r.data else None
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        return None
+    return r.data["user_id"]
 
 
 def list_user_keys(user_id: str) -> list[dict]:
     sup = _get()
     r = sup.table("api_keys").select("id", "key", "created_at").eq("user_id", user_id).execute()
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        return []
     return r.data
 
 
@@ -76,28 +91,38 @@ def create_site(user_id: str, site_name: str, url: str, content: str, descriptio
         "content": content,
         "description": description,
     }).execute()
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        raise RuntimeError("Failed to create site")
     return r.data[0]["id"]
 
 
 def get_site_by_name(site_name: str) -> Optional[dict]:
     sup = _get()
     r = sup.table("sites").select("*").eq("site_name", site_name).maybe_single().execute()
-    return r.data if r.data else None
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        return None
+    return r.data
 
 
 def get_site_by_id(site_id: str) -> Optional[dict]:
     sup = _get()
     r = sup.table("sites").select("*").eq("id", site_id).maybe_single().execute()
-    return r.data if r.data else None
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        return None
+    return r.data
 
 
 def list_user_sites(user_id: str) -> list[dict]:
     sup = _get()
     r = sup.table("sites").select("*").eq("user_id", user_id).execute()
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        return []
     return r.data
 
 
 def update_site(site_id: str, content: str) -> bool:
     sup = _get()
     r = sup.table("sites").update({"content": content}).eq("id", site_id).execute()
+    if r is None or not hasattr(r, 'data') or r.data is None:
+        return False
     return bool(r.data)
