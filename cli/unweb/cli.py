@@ -186,7 +186,17 @@ def search_cmd(ctx, query: str, max_results: int):
 cli.add_command(search_cmd)
 
 
-main = cli
+@click.command("proxy")
+@click.option("--port", "-p", default=8080, help="Proxy port")
+@click.pass_context
+def proxy_cmd(ctx, port: int):
+    """Start local proxy — auto-structure all web traffic for AI agents."""
+    from .proxy import main as proxy_main
+    import sys
+    sys.argv = ["unweb-proxy", "--port", str(port)]
+    proxy_main()
 
-if __name__ == "__main__":
-    cli()
+cli.add_command(proxy_cmd)
+
+
+main = cli
