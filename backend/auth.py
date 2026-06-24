@@ -15,9 +15,9 @@ async def verify_api_key(
     request: Request,
     x_api_key: str = Header(...),
 ) -> str:
-    """Validate an API key against Supabase, or bypass in dev mode."""
+    # Dev mode: return the dev user UUID
     if os.environ.get("UNWEB_DEV", "").lower() == "true":
-        return "dev_user"
+        return os.environ.get("DEV_USER_ID", "062b5af1-9058-44dd-b2e2-6d60b90cda15")
 
     user_id = _verify_key(x_api_key)
     if user_id is None:
