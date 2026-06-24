@@ -188,13 +188,15 @@ cli.add_command(search_cmd)
 
 @click.command("proxy")
 @click.option("--port", "-p", default=8080, help="Proxy port")
-@click.pass_context
-def proxy_cmd(ctx, port: int):
+def proxy_cmd(port: int):
     """Start local proxy — auto-structure all web traffic for AI agents."""
-    from .proxy import main as proxy_main
-    import sys
-    sys.argv = ["unweb-proxy", "--port", str(port)]
-    proxy_main()
+    import asyncio
+    from .proxy import UnwebProxy
+    proxy = UnwebProxy()
+    try:
+        asyncio.run(proxy.start("0.0.0.0", port))
+    except KeyboardInterrupt:
+        pass
 
 cli.add_command(proxy_cmd)
 
