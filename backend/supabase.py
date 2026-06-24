@@ -32,9 +32,11 @@ def _token() -> str:
 def create_user(email: str, password: str) -> str:
     sup = _get()
     existing = sup.table("users").select("id").eq("email", email).maybe_single().execute()
-    if existing.data:
+    if existing and hasattr(existing, 'data') and existing.data:
         raise ValueError(f"User with email {email!r} already exists")
     r = sup.table("users").insert({"email": email, "password_hash": _hash(password)}).execute()
+    if not r or not hasattr(r, 'data') or not r.data:
+        raise RuntimeError("Failed to create user")
     return r.data[0]["id"]
 
 
