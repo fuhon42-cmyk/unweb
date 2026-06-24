@@ -14,17 +14,17 @@ DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.co
 EXTRACTION_PROMPT = """You are a web content extractor for AI agents. Analyze this webpage content and extract structured information.
 
 Return ONLY valid JSON (no markdown, no explanation) with these fields:
-{
+{{
   "title": "Clean page title",
-  "description": "One-paragraph summary of what this page is about",
-  "summary": "Concise 3-5 bullet-point summary of key information",
+  "description": "One-paragraph summary",
+  "summary": "Concise 3-5 bullet-point summary",
   "category": "One of: article, product, documentation, company, blog, news, other",
-  "entities": ["List of key entities mentioned: people, companies, products, technologies"],
+  "entities": ["List of key entities"],
   "topics": ["3-5 topic tags"],
   "language": "Detected language code (en, zh, etc.)",
   "sentiment": "positive, negative, or neutral",
-  "actionable": true or false - whether this page contains something a user can do (buy, sign up, download, etc.)
-}
+  "actionable": true or false
+}}
 
 Webpage content:
 {content}
