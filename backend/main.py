@@ -17,6 +17,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from .auth import verify_api_key
 from .crawler import fetch_url
 from .extractor import extract_content
+from .llm_extractor import extract_with_llm, merge_extraction
 from .rate_limit import FreeTierLimiter, local_dev_limiter
 from .schemas import (
     ErrorResponse,
@@ -156,6 +157,12 @@ async def extract(request: Request, body: ExtractRequest, user_id: str = Depends
             },
         )
     extracted = await extract_content(result["html"], result["final_url"])
+    if body.use_llm:
+        llm_data = await extract_with_llm(
+            extracted.content, body.url,
+            title=extracted.title, description=extracted.description
+        )
+        extracted = merge_extraction(extracted, llm_data)
     return extracted
 
 

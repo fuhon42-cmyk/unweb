@@ -3,10 +3,11 @@ from pydantic import BaseModel
 
 class ExtractRequest(BaseModel):
     url: str
+    use_llm: bool = False
 
     model_config = {
         "json_schema_extra": {
-            "examples": [{"url": "https://example.com/article"}]
+            "examples": [{"url": "https://example.com/article", "use_llm": True}]
         }
     }
 
