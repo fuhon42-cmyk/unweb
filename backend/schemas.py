@@ -81,3 +81,23 @@ class ErrorResponse(BaseModel):
             ]
         }
     }
+
+
+class AuthRequest(BaseModel):
+    email: str
+    password: str
+
+
+class AuthResponse(BaseModel):
+    user_id: str
+    api_key: str
+
+
+class KeyItem(BaseModel):
+    id: str
+    key: str
+    created_at: str
+
+
+class KeysResponse(BaseModel):
+    keys: list[KeyItem]

@@ -20,12 +20,17 @@ from .extractor import extract_content
 from .llm_extractor import extract_with_llm, merge_extraction
 from .rate_limit import FreeTierLimiter, local_dev_limiter
 from .schemas import (
+    AuthRequest,
+    AuthResponse,
     ErrorResponse,
     ExtractRequest,
     ExtractResponse,
+    KeyItem,
+    KeysResponse,
     PublishRequest,
     PublishResponse,
 )
+from .supabase import authenticate_user, create_api_key, create_user, list_user_keys
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +61,7 @@ app = FastAPI(
         {"name": "extract", "description": "Extract structured content from a URL"},
         {"name": "publish", "description": "Publish content as a new site"},
         {"name": "sites", "description": "Retrieve published site information"},
+        {"name": "auth", "description": "User registration, login, and API key management"},
     ],
 )
 
@@ -201,3 +207,54 @@ async def get_site(site_id: str, user_id: str = Depends(verify_api_key)):
             },
         )
     return site
+
+
+# ---------------------------------------------------------------------------
+# Auth endpoints
+# ---------------------------------------------------------------------------
+@app.post(
+    "/api/v1/auth/register",
+    response_model=AuthResponse,
+    tags=["auth"],
+    responses={409: {"model": ErrorResponse}},
+)
+async def register(body: AuthRequest):
+    try:
+        user_id = create_user(body.email, body.password)
+    except ValueError as e:
+        return JSONResponse(
+            status_code=409,
+            content={"error": "conflict", "detail": str(e)},
+        )
+    api_key = create_api_key(user_id)
+    return AuthResponse(user_id=user_id, api_key=api_key)
+
+
+@app.post(
+    "/api/v1/auth/login",
+    response_model=AuthResponse,
+    tags=["auth"],
+    responses={401: {"model": ErrorResponse}},
+)
+async def login(body: AuthRequest):
+    user_id = authenticate_user(body.email, body.password)
+    if user_id is None:
+        return JSONResponse(
+            status_code=401,
+            content={
+                "error": "unauthorized",
+                "detail": "Invalid email or password",
+            },
+        )
+    api_key = create_api_key(user_id)
+    return AuthResponse(user_id=user_id, api_key=api_key)
+
+
+@app.get(
+    "/api/v1/keys",
+    response_model=KeysResponse,
+    tags=["auth"],
+)
+async def list_keys(user_id: str = Depends(verify_api_key)):
+    keys = list_user_keys(user_id)
+    return KeysResponse(keys=keys)
