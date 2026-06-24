@@ -10,7 +10,7 @@ export default function Home() {
           </span>{" "}
           in 5 Minutes
         </h1>
-        <p className="mt-6 max-w-xl text-lg leading-relaxed text-zinc-400">
+        <p className="mt-6 max-w-xl text-lg leading-relaxed text-zinc-300">
           Unweb strips away complexity so LLMs, crawlers, and AI agents can read
           your site effortlessly. No config. No overhead. Just results.
         </p>
@@ -46,13 +46,13 @@ export default function Home() {
           ].map((item) => (
             <div
               key={item.step}
-              className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8"
+              className="rounded-xl border border-zinc-700 bg-zinc-900/50 p-8"
             >
               <span className="text-sm font-semibold text-emerald-400">
                 {item.step}
               </span>
               <h3 className="mt-3 text-lg font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+              <p className="mt-2 text-sm leading-relaxed text-zinc-300">
                 {item.desc}
               </p>
             </div>
@@ -63,12 +63,12 @@ export default function Home() {
       {/* Developer */}
       <section className="mx-auto w-full max-w-3xl px-6 py-24">
         <h2 className="text-center text-3xl font-bold">For Developers</h2>
-        <p className="mx-auto mt-4 max-w-lg text-center text-zinc-400">
+        <p className="mx-auto mt-4 max-w-lg text-center text-zinc-300">
           One command, zero friction. Integrate Unweb into your existing
           pipeline in seconds.
         </p>
-        <div className="mt-10 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
-          <div className="flex items-center gap-1.5 border-b border-zinc-800 px-4 py-3">
+        <div className="mt-10 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
+          <div className="flex items-center gap-1.5 border-b border-zinc-700 px-4 py-3">
             <span className="h-3 w-3 rounded-full bg-red-500" />
             <span className="h-3 w-3 rounded-full bg-yellow-500" />
             <span className="h-3 w-3 rounded-full bg-green-500" />
@@ -88,7 +88,7 @@ npx unweb deploy`}</code>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800 px-6 py-8 text-center text-sm text-zinc-500">
+      <footer className="border-t border-zinc-700 px-6 py-8 text-center text-sm text-zinc-400">
         <p>&copy; {new Date().getFullYear()} Unweb. AGPL-3.0 License.</p>
       </footer>
     </div>

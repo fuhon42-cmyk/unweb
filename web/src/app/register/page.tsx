@@ -65,12 +65,12 @@ export default function RegisterPage() {
           <h1 className="text-center text-3xl font-bold tracking-tight">
             Register Your Site
           </h1>
-          <p className="mt-2 text-center text-zinc-400">
+          <p className="mt-2 text-center text-zinc-300">
             Make your site AI-ready in minutes.
           </p>
 
           {result ? (
-            <div className="mt-10 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 text-center">
+            <div className="mt-10 rounded-2xl border border-zinc-700 bg-zinc-900/50 p-6 text-center">
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20">
                 <svg
                   className="h-6 w-6 text-emerald-400"
@@ -87,10 +87,10 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <h2 className="text-lg font-semibold">Published!</h2>
-              <p className="mt-1 text-sm text-zinc-400">
+              <p className="mt-1 text-sm text-zinc-300">
                 Your llms.txt is live at:
               </p>
-              <div className="mt-4 flex items-center gap-2 rounded-xl border border-zinc-800 bg-black p-3">
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-zinc-700 bg-black p-3">
                 <code className="flex-1 truncate text-sm text-emerald-400">
                   {result.llms_url}
                 </code>
@@ -141,7 +141,7 @@ export default function RegisterPage() {
               <div>
                 <label
                   htmlFor="url"
-                  className="block text-sm font-medium text-zinc-300"
+                  className="block text-sm font-medium text-zinc-200"
                 >
                   Website URL
                 </label>
@@ -152,14 +152,14 @@ export default function RegisterPage() {
                   placeholder="https://example.com"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="mt-1.5 block w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="mt-1.5 block w-full rounded-xl border border-zinc-700 bg-zinc-900/50 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-zinc-300"
+                  className="block text-sm font-medium text-zinc-200"
                 >
                   Site Name
                 </label>
@@ -170,14 +170,14 @@ export default function RegisterPage() {
                   placeholder="My Blog"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-1.5 block w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="mt-1.5 block w-full rounded-xl border border-zinc-700 bg-zinc-900/50 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-zinc-300"
+                  className="block text-sm font-medium text-zinc-200"
                 >
                   Description
                 </label>
@@ -188,7 +188,7 @@ export default function RegisterPage() {
                   placeholder="A short description of your site..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="mt-1.5 block w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="mt-1.5 block w-full resize-none rounded-xl border border-zinc-700 bg-zinc-900/50 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
 

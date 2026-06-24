@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CopyButton from "@/components/CopyButton";
 import { extract, type ExtractResponse } from "@/lib/api";
 
@@ -15,13 +15,16 @@ const mockSites = [
   { id: "site_4", name: "Landing Page", url: "https://example.com", status: "pending" as const, lastScraped: "Jun 24, 2026" },
 ];
 
-const mockStats = {
-  requestsToday: 847,
-  sitesRegistered: 4,
-  quotaRemaining: 9153,
-};
-
 const mockApiKey = "sk-unweb-mock-key-abc123def456ghi789jkl";
+
+const BASE_URL: string =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+interface DashboardMetrics {
+  total_extracts: number;
+  total_publishes: number;
+  unique_urls_24h: number;
+}
 
 // ---------------------------------------------------------------------------
 // Status badge
@@ -63,8 +66,8 @@ function StatCard({
   };
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-6 py-5">
-      <p className="text-sm text-zinc-400">{label}</p>
+    <div className="rounded-xl border border-zinc-700 bg-zinc-900/50 px-6 py-5">
+      <p className="text-sm text-zinc-300">{label}</p>
       <p className={`mt-1 text-2xl font-bold tracking-tight ${accentColors[accent]}`}>
         {value}
       </p>
@@ -103,6 +106,30 @@ export default function DashboardPage() {
   const [result, setResult] = useState<ExtractResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resultOpen, setResultOpen] = useState(false);
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+
+  useEffect(() => {
+    async function fetchMetrics() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/v1/metrics`, {
+          headers: { "X-API-Key": mockApiKey },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMetrics(data.dashboard);
+        }
+      } catch {
+        // API not available — stay null, mock fallback not needed
+      }
+    }
+    fetchMetrics();
+  }, []);
+
+  const stats = metrics ?? {
+    total_extracts: 847,
+    total_publishes: 4,
+    unique_urls_24h: 42,
+  };
 
   async function handleExtract(e: React.FormEvent) {
     e.preventDefault();
@@ -130,7 +157,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="mt-2 text-zinc-400">
+          <p className="mt-2 text-zinc-300">
             Overview of your Unweb account and activity.
           </p>
         </div>
@@ -138,18 +165,18 @@ export default function DashboardPage() {
         {/* Stats cards */}
         <div className="mb-10 grid gap-6 sm:grid-cols-3">
           <StatCard
-            label="Requests Today"
-            value={mockStats.requestsToday.toLocaleString()}
+            label="Total Extracts"
+            value={stats.total_extracts.toLocaleString()}
             accent="emerald"
           />
           <StatCard
-            label="Sites Registered"
-            value={mockStats.sitesRegistered.toString()}
+            label="Sites Published"
+            value={stats.total_publishes.toString()}
             accent="cyan"
           />
           <StatCard
-            label="Quota Remaining"
-            value={mockStats.quotaRemaining.toLocaleString()}
+            label="Unique URLs (24h)"
+            value={stats.unique_urls_24h.toLocaleString()}
             accent="violet"
           />
         </div>
@@ -157,7 +184,7 @@ export default function DashboardPage() {
         {/* API key */}
         <section className="mb-10">
           <h2 className="mb-4 text-lg font-semibold">API Key</h2>
-          <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
+          <div className="flex items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900/50 px-5 py-4">
             <code className="min-w-0 flex-1 truncate font-mono text-sm text-zinc-300">
               {mockApiKey}
             </code>
@@ -168,14 +195,14 @@ export default function DashboardPage() {
         {/* Sites list */}
         <section className="mb-10">
           <h2 className="mb-4 text-lg font-semibold">Sites</h2>
-          <div className="overflow-hidden rounded-xl border border-zinc-800">
+          <div className="overflow-hidden rounded-xl border border-zinc-700">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                  <th className="px-5 py-3 font-medium text-zinc-400">Name</th>
-                  <th className="px-5 py-3 font-medium text-zinc-400">URL</th>
-                  <th className="px-5 py-3 font-medium text-zinc-400">Status</th>
-                  <th className="px-5 py-3 font-medium text-zinc-400">
+                <tr className="border-b border-zinc-700 bg-zinc-900/50">
+                  <th className="px-5 py-3 font-medium text-zinc-300">Name</th>
+                  <th className="px-5 py-3 font-medium text-zinc-300">URL</th>
+                  <th className="px-5 py-3 font-medium text-zinc-300">Status</th>
+                  <th className="px-5 py-3 font-medium text-zinc-300">
                     Last Scraped
                   </th>
                 </tr>
@@ -184,16 +211,16 @@ export default function DashboardPage() {
                 {mockSites.map((site) => (
                   <tr
                     key={site.id}
-                    className="border-b border-zinc-800 last:border-0"
+                    className="border-b border-zinc-700 last:border-0"
                   >
                     <td className="px-5 py-4 font-medium">{site.name}</td>
-                    <td className="max-w-0 px-5 py-4 font-mono text-xs text-zinc-400">
+                    <td className="max-w-0 px-5 py-4 font-mono text-xs text-zinc-300">
                       <span className="block truncate">{site.url}</span>
                     </td>
                     <td className="px-5 py-4">
                       <StatusBadge status={site.status} />
                     </td>
-                    <td className="px-5 py-4 text-zinc-400">
+                    <td className="px-5 py-4 text-zinc-300">
                       {site.lastScraped}
                     </td>
                   </tr>

@@ -15,7 +15,7 @@ export default function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="border-b border-zinc-800 bg-black/50 backdrop-blur sticky top-0 z-50">
+    <header className="border-b border-zinc-700 bg-black/50 backdrop-blur sticky top-0 z-50">
       <nav className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="text-lg font-bold text-emerald-400 tracking-tight">
           Unweb
@@ -30,7 +30,7 @@ export default function Header() {
               className={`text-sm transition-colors ${
                 pathname === l.href
                   ? 'text-emerald-400'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-zinc-300 hover:text-zinc-200'
               }`}
             >
               {l.label}
@@ -48,7 +48,7 @@ export default function Header() {
 
         {/* Mobile */}
         <button
-          className="sm:hidden text-zinc-400"
+          className="sm:hidden text-zinc-300"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
         >
@@ -63,14 +63,14 @@ export default function Header() {
       </nav>
 
       {open && (
-        <div className="sm:hidden border-t border-zinc-800 px-4 py-3 space-y-2">
+        <div className="sm:hidden border-t border-zinc-700 px-4 py-3 space-y-2">
           {links.map((l) => (
             <Link
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
               className={`block text-sm ${
-                pathname === l.href ? 'text-emerald-400' : 'text-zinc-400'
+                pathname === l.href ? 'text-emerald-400' : 'text-zinc-300'
               }`}
             >
               {l.label}
