@@ -1,12 +1,15 @@
 """LLM-powered content extraction using DeepSeek API."""
 
 import json
+import logging
 import os
 from typing import Optional
 
 import httpx
 
 from .schemas import ExtractResponse
+
+logger = logging.getLogger(__name__)
 
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
@@ -45,6 +48,7 @@ async def extract_with_llm(
     Returns enhanced extraction data, or None if LLM is unavailable/fails.
     """
     if not DEEPSEEK_API_KEY:
+        logger.warning("DEEPSEEK_API_KEY not configured, skipping LLM extraction")
         return None
 
     content_preview = raw_content[:8000]  # Limit tokens
@@ -75,7 +79,8 @@ async def extract_with_llm(
             result_text = data["choices"][0]["message"]["content"]
             return json.loads(result_text)
 
-    except Exception:
+    except Exception as e:
+        logger.warning("LLM extraction failed: %s", e)
         return None
 
 
