@@ -50,3 +50,5 @@ Python FastAPI · Next.js · DeepSeek · Railway · AGPL-3.0
 ---
 
 Built by [@fuhon42-cmyk](https://github.com/fuhon42-cmyk) · [Try Unweb →](https://unweb-production-6f69.up.railway.app)
+Related
+    - agent-taobao — Taobao affiliate SDK for AI agents
