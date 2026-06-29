@@ -1,88 +1,52 @@
-# Unweb
+# Unweb — Is your website ready for AI?
 
-**Make the Web AI-Native**
+**Free AI-readability score for any website. No signup.**
 
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![AI Readability](https://unweb-production-6f69.up.railway.app/api/v1/badge?url=github.com)](https://unweb-production-6f69.up.railway.app)
 
-Unweb gives every website an AI-readable endpoint. LLMs and AI agents can understand your web content — structured, fast, and reliable.
+> 80% of web traffic will be AI agents by 2028. Is your site ready?
 
-## Why?
+## 🚀 Try it now
 
-The web was built for human eyes (HTML, CSS, JS). But in the AI era, 80% of traffic consumers will be AI agents. They shouldn't have to parse your `<div>` soup.
+**[→ Get your website's AI-readability score](https://unweb-production-6f69.up.railway.app)**
 
-```
-Before: 🤖 → HTML soup → slow, expensive token waste
-After:  🤖 → unweb.ai/site → clean JSON → instant understanding
-```
+Enter any URL, get an instant 8-point AI-readability report with actionable fixes.
 
-## Quick Start
+## 📊 Embed the badge
 
-### Website Owner
-```bash
-# 1. Install CLI
-pip install unweb
+Show your visitors your site is AI-friendly. Copy this into your HTML:
 
-# 2. Register your site
-unweb publish https://my-site.com --name "My SaaS"
-
-# 3. Done! Your site is now AI-readable at:
-# https://api.unweb.ai/llms/my-site
+```html
+<a href="https://unweb-production-6f69.up.railway.app">
+  <img src="https://unweb-production-6f69.up.railway.app/api/v1/badge?url=YOURSITE.COM" alt="AI Readability Score">
+</a>
 ```
 
-### AI Agent Developer
+## 🔧 For developers
+
+Unweb also provides structured extraction for AI agents:
+
 ```python
 import httpx
-
-# Extract any URL as structured JSON
-r = httpx.get("https://api.unweb.ai/api/v1/extract",
-    params={"url": "https://example.com"},
-    headers={"Authorization": "Bearer YOUR_API_KEY"})
-
+r = httpx.post("https://unweb-production-6f69.up.railway.app/api/v1/extract",
+    json={"url": "https://news.ycombinator.com"})
 data = r.json()
-print(data["title"])        # "Example Domain"
-print(data["content"])      # Clean text, no HTML
-print(data["actions"])      # ["Login", "Sign Up", "Search"]
+print(data["title"], data["content"])
 ```
 
-## Features
+## 📡 API
 
-- 🔍 **Universal Extraction** — Any URL → structured JSON
-- 📤 **One-Click Publishing** — Register your site in seconds
-- 🤖 **Agent-Optimized** — Minimal tokens, maximum information
-- 🏷️ **AI-Ready Badge** — Show the world your site speaks AI
-- 🔌 **Drop-in CLI/SDK** — Works with any AI agent framework
-- 🌐 **Open Source** — AGPL-3.0, free forever
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/v1/score` | Score any website (8 dimensions) |
+| `GET /api/v1/badge?url=` | SVG badge for your site |
+| `POST /api/v1/extract` | Structured JSON extraction |
+| `GET /api/v1/health` | Health check |
 
-## API
+## 🛠 Tech
 
-```
-POST /api/v1/extract   — Extract any URL
-POST /api/v1/publish   — Register a site
-GET  /api/v1/sites/:id — Get site info
-GET  /api/v1/health    — Health check
-```
-
-[Full API Docs →](https://unweb.ai/docs)
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | Python FastAPI |
-| Frontend | Next.js + Tailwind |
-| CLI | Python Click |
-| DB | Supabase |
-| AI | DeepSeek (structured extraction) |
-| Deploy | Vercel + Railway |
-
-## License
-
-AGPL-3.0 — Free for open source. [Commercial license available](https://unweb.ai/pricing) for proprietary use.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). All contributors must sign the CLA.
+Python FastAPI · Next.js · DeepSeek · Railway · AGPL-3.0
 
 ---
-Built by [@fuhon](https://github.com/fuhon42-cmyk) • [unweb.ai](https://unweb.ai)
+
+Built by [@fuhon42-cmyk](https://github.com/fuhon42-cmyk) · [Try Unweb →](https://unweb-production-6f69.up.railway.app)
