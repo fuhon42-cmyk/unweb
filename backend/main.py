@@ -387,3 +387,137 @@ async def login(body: AuthRequest):
 async def list_keys(user_id: str = Depends(verify_api_key)):
     keys = list_user_keys(user_id)
     return KeysResponse(keys=keys)
+
+
+# ── Aiso / ChuanSha AI proxy endpoints ──────────────────────────────────
+
+DEEPSEEK_KEY = environ.get("DEEPSEEK_API_KEY", "")
+DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
+
+from pydantic import BaseModel, field_validator
+
+ALLOWED_OCCASIONS = {"上班", "约会", "日常", "运动"}
+
+class OutfitTextRequest(BaseModel):
+    image_base64: str = ""
+    occasion: str = "日常"
+    weather: str = ""
+    profile: dict = {}
+
+    @field_validator("occasion")
+    @classmethod
+    def validate_occasion(cls, v: str) -> str:
+        if v not in ALLOWED_OCCASIONS:
+            raise ValueError(f"occasion must be one of {sorted(ALLOWED_OCCASIONS)}")
+        return v
+
+
+@app.post("/api/aiso/outfit-text")
+async def outfit_text(request: Request, body: OutfitTextRequest):
+    if not DEEPSEEK_KEY:
+        return JSONResponse(
+            status_code=503,
+            content={"success": False, "error": {"code": "ai_service_error", "message": "AI service not configured"}},
+        )
+
+    p = body.profile
+    gender = p.get("gender", "未设置")
+    height = p.get("height", 170)
+    weight = p.get("weight", 65)
+    body_type = p.get("bodyType", "标准")
+    style = p.get("stylePreference", "休闲")
+    skin = p.get("skinTone", "自然")
+
+    prompt = f"""你是专业穿搭顾问。根据用户画像推荐一套完整穿搭。
+
+用户画像：{gender}，{height}cm，{weight}kg，{body_type}身材，喜欢{style}风格，{skin}
+穿搭场合：{body.occasion}
+天气：{body.weather}
+
+请推荐一套完整的穿搭方案。严格返回JSON（不要其他文字）：
+{{"description":"整体穿搭描述，100字左右，说明为什么这样搭","items":[{{"name":"单品名称","category":"上装/下装/鞋/配饰","taobaoKeyword":"淘宝搜索关键词","estimatedPrice":"预估价格区间如¥199-299"}}]}}
+要求：
+- 推荐5-7件单品，覆盖上装、下装、鞋、配饰
+- taobaoKeyword要是真实可搜的淘宝关键词
+- estimatedPrice要符合市场行情
+- 穿搭要考虑天气和场合"""
+
+    import httpx
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                DEEPSEEK_URL,
+                headers={
+                    "Authorization": f"Bearer {DEEPSEEK_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.7,
+                    "max_tokens": 1200,
+                },
+            )
+    except Exception:
+        return JSONResponse(
+            status_code=502,
+            content={"success": False, "error": {"code": "ai_service_error", "message": "Failed to reach AI service"}},
+        )
+
+    if resp.status_code != 200:
+        logger.error("DeepSeek error (outfit-text): %s %s", resp.status_code, resp.text[:300])
+        return JSONResponse(
+            status_code=502,
+            content={"success": False, "error": {"code": "ai_service_error", "message": f"AI service error: {resp.status_code}"}},
+        )
+
+    data = resp.json()
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError):
+        return JSONResponse(
+            status_code=502,
+            content={"success": False, "error": {"code": "ai_service_error", "message": "Unexpected AI response format"}},
+        )
+
+    # Parse JSON from content (handle markdown fences)
+    json_text = content.strip()
+    if json_text.startswith("```json"):
+        json_text = json_text[7:]
+    elif json_text.startswith("```"):
+        json_text = json_text[3:]
+    if json_text.endswith("```"):
+        json_text = json_text[:-3]
+    json_text = json_text.strip()
+
+    import json as _json
+    try:
+        result = _json.loads(json_text)
+    except _json.JSONDecodeError:
+        return JSONResponse(
+            status_code=502,
+            content={"success": False, "error": {"code": "ai_service_error", "message": f"Failed to parse AI response: {json_text[:200]}"}},
+        )
+
+    return JSONResponse(
+        content={
+            "success": True,
+            "data": {
+                "description": result.get("description", ""),
+                "items": result.get("items", []),
+            },
+        }
+    )
+
+
+@app.options("/api/aiso/outfit-text")
+async def outfit_text_options():
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+        },
+    )
